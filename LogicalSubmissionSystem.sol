@@ -18,7 +18,7 @@ pragma solidity >= 0.4.0 < 0.6.0;
             _;
         }
         modifier chechActive(address userAddr) {
-            for(uint i=0; i<countOfUsers; i++) {
+            for(uint i=0; i<users.length; i++) {
             if(userAddr == users[i].user) {
                require(users[i].active == true, "error, user is not active"); 
                 }
@@ -40,8 +40,8 @@ pragma solidity >= 0.4.0 < 0.6.0;
         }
         struct remittance 
         {
-            address payable sender;
-            uint recipientMoney;
+            address sender;
+            address payable recipientMoney;
             uint sumMoney;
             uint timeOfLife;
             bool status;
@@ -57,14 +57,13 @@ pragma solidity >= 0.4.0 < 0.6.0;
         }
         roleAttributes[] users;
         remittance[] transfers;
-        uint countOfUsers = 0;
+        
         
         mapping(uint=>string) roles;
         mapping(address=>uint) getRole;
         
         function _creatUser(string memory _name, uint _homeAddress, uint _role, address _user, string memory _postalIndex) private {
             users.push(roleAttributes(_name, _homeAddress, _role, _user, _postalIndex, true));
-            countOfUsers++;
             getRole[_user] = _role;
         }
         function chengePrivInfo(string calldata _name, uint _homeAddress, uint _id) external {
@@ -100,19 +99,41 @@ pragma solidity >= 0.4.0 < 0.6.0;
              }
         }
         function registration(string calldata _name, uint _homeAddress) external {
-            for(uint i=0; i<countOfUsers; i++) {
+            for(uint i=0; i<users.length; i++) {
                 require(msg.sender != users[i].user, "Account already created");
             }
             _creatUser(_name, _homeAddress, 3, msg.sender, "");
+        }
+        function createTransfer(address payable _recipientMoney, uint _sumMoney, uint _timeOfLife) external payable {
+            require (msg.value >= _sumMoney, "not enoght money");
+            uint deadLine = now;
+            deadLine += _timeOfLife * 1 days;
+            transfers.push(remittance(msg.sender, _recipientMoney, _sumMoney * 1 ether, _sumMoney, true));
+        }
+        function getTransfer(uint _id) external {
+            if(transfers[_id].timeOfLife <= now && transfers[_id].status == true) {
+                transfers[_id].status = false;
+            
+            }
+            require (transfers[_id].status == true, "You already got the money");
+            require(msg.sender == transfers[_id].recipientMoney, "You are not recipient");  
+            msg.sender.transfer(transfers[_id].sumMoney);
+            transfers[_id].status = false;
+            
         }
         function viewUser(uint _id) view public returns(string memory, uint, uint, address, string memory, bool) {
             roleAttributes memory a = users[_id];
             return(a.name, a.homeAddress, a.role, a.user, a.postalIndex, a.active);
         }
-        function createTransfer(uint _recipientMoney, uint _sumMoney, uint _timeOfLife) external {
-             
-            
+        function viewMoney() public view checkRole(getRole[msg.sender]) returns(uint)  {
+            return address(this).balance;   
         }
+        function viewTransfer(uint _id) public view returns(address, address payable, uint, uint, bool) {
+            remittance memory b = transfers[_id];
+            return(b.sender, b.recipientMoney, b.sumMoney, b.timeOfLife, b.status);
+        }
+        
+        
         
         //function creationOfMail(uint weight) 
 
