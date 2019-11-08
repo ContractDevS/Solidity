@@ -40,7 +40,7 @@ pragma solidity >= 0.4.0 < 0.6.0;
         }
         struct remittance 
         {
-            address sender;
+            address payable sender;
             address payable recipientMoney;
             uint sumMoney;
             uint timeOfLife;
@@ -61,6 +61,7 @@ pragma solidity >= 0.4.0 < 0.6.0;
         
         mapping(uint=>string) roles;
         mapping(address=>uint) getRole;
+        mapping(uint=>uint[]) getPath;
         
         function _creatUser(string memory _name, uint _homeAddress, uint _role, address _user, string memory _postalIndex) private {
             users.push(roleAttributes(_name, _homeAddress, _role, _user, _postalIndex, true));
@@ -113,13 +114,18 @@ pragma solidity >= 0.4.0 < 0.6.0;
         function getTransfer(uint _id) external {
             if(transfers[_id].timeOfLife <= now && transfers[_id].status == true) {
                 transfers[_id].status = false;
-            
+                transfers[_id].sender.transfer(transfers[_id].sumMoney);
             }
             require (transfers[_id].status == true, "You already got the money");
             require(msg.sender == transfers[_id].recipientMoney, "You are not recipient");  
             msg.sender.transfer(transfers[_id].sumMoney);
             transfers[_id].status = false;
-            
+        }
+        function cancelTransfer(uint _id) external {
+            require(transfers[_id].status == true, "Transfer is not active");
+            require(transfers[_id].recipientMoney == msg.sender || transfers[_id].sender == msg.sender, "You doesn't have permision");
+            transfers[_id].sender.transfer(transfers[_id].sumMoney);
+            transfers[_id].status = false;
         }
         function viewUser(uint _id) view public returns(string memory, uint, uint, address, string memory, bool) {
             roleAttributes memory a = users[_id];
