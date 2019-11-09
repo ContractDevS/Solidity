@@ -59,6 +59,7 @@ pragma solidity >= 0.4.0 < 0.6.0;
         
         roleAttributes[] users;
         remittance[] transfers;
+        mailing[] mails; 
         
         mapping(uint=>string) roles;
         mapping(address=>uint) getRole;
@@ -134,6 +135,33 @@ pragma solidity >= 0.4.0 < 0.6.0;
             transfers[_id].status = false;
         }
         
+        function creationOfMail(string calldata _trackNumber, address _recipient, uint _types, uint _departureClass, uint _weight, uint _declaredValue, uint _destinationAddress, uint departureAddress) external {
+            require(_weight <= 10, "too much weight");
+            require(_declaredValue >= 0, "value is too low");
+            uint tp = _types;
+            uint _totalValue;
+            uint _eth;
+            uint _lifetime;
+            if (_types == 0) {
+                tp = 3;
+            }
+            if(_types == 3) {
+                _eth = 100 finney;
+                _lifetime = 15;
+            }else if (_types == 2) {
+                _eth = 300 finney;
+                _lifetime = 10;
+            }else if (_types == 1) {
+                _eth = 500 finney;
+                _lifetime = 5;
+            }
+            _totalValue = _types * _weight + _declaredValue * _eth;
+            mails.push(mailing(_trackNumber, _recipient, _types, _departureClass, _eth, _weight, _declaredValue, _totalValue, _destinationAddress, _departureClass));
+        }
+        function viewOfMail(uint _id) public view returns(string memory, address, uint, uint, uint, uint, uint, uint, uint, uint) {
+            mailing memory z = mails[_id];
+            return(z.trackNumber, z.recipient, z.types, z.departureClass, z.costOfDelivery, z.weight, z.declaredValue, z.totalValue, z.destinationAddress, z.departureClass);
+        }
         function viewUser(uint _id) view public returns(string memory, string memory, uint, address, string memory, bool) {
             roleAttributes memory a = users[_id];
             return(a.name, a.homeAddress, a.role, a.user, a.postalIndex, a.active);
@@ -147,9 +175,4 @@ pragma solidity >= 0.4.0 < 0.6.0;
             remittance memory b = transfers[_id];
             return(b.sender, b.recipientMoney, b.sumMoney, b.timeOfLife, b.status);
         }
-        
-        
-        
-        //function creationOfMail(uint weight) 
-
     }
